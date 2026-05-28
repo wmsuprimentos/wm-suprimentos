@@ -143,64 +143,9 @@ body{font-family:'Lato',sans-serif;background:#f0f2f7;color:#151c32;font-size:14
 .chip.red.active{background:#dc2626;border-color:#dc2626}
 /* TABLE */
 .tflt{display:flex;gap:7px;margin-bottom:9px;flex-wrap:wrap;align-items:center}
-.tflt input{font-size:12px;padding:6px 9px;border:1px solid #dde1ee;border-radius:8px;background:#fff;color:#151c32;outline:none}
+.tflt input,.tflt select{font-size:12px;padding:6px 9px;border:1px solid #dde1ee;border-radius:8px;background:#fff;color:#151c32;outline:none}
 .tflt input{flex:1 1 170px}
 .tcnt{font-size:11px;color:#a8afc8;margin-left:auto;white-space:nowrap}
-/* Multi-select dropdown */
-.ms-wrap{position:relative;display:inline-block;flex-shrink:0}
-.ms-btn{
-  display:inline-flex;align-items:center;gap:6px;
-  font-size:12px;padding:7px 10px;
-  border:1px solid #dde1ee;border-radius:8px;
-  background:#fff;color:#151c32;cursor:pointer;
-  white-space:nowrap;user-select:none;
-  line-height:1;
-}
-.ms-btn svg{width:10px;height:10px;flex-shrink:0;color:#a8afc8;transition:transform .15s}
-.ms-dropdown.open ~ .ms-btn svg,.ms-btn.open-state svg{transform:rotate(180deg)}
-.ms-btn.has-sel{border-color:#151c32;background:#151c32;color:#fff}
-.ms-btn.has-sel svg{color:rgba(255,255,255,.5)}
-.ms-dropdown{
-  display:none;position:absolute;top:calc(100% + 5px);left:0;
-  background:#fff;border:1px solid #dde1ee;border-radius:10px;
-  box-shadow:0 6px 24px rgba(21,28,50,.1);z-index:1000;
-  min-width:160px;padding:4px;
-}
-.ms-dropdown.open{display:block}
-.ms-opt{
-  display:grid;grid-template-columns:16px 1fr;
-  align-items:center;gap:8px;
-  padding:7px 8px;border-radius:6px;
-  cursor:pointer;font-size:12px;color:#151c32;
-  transition:background .1s;white-space:nowrap;
-}
-.ms-opt:hover{background:#f4f5f8}
-.ms-opt input[type=checkbox]{
-  width:14px;height:14px;margin:0;
-  accent-color:#151c32;cursor:pointer;
-  flex-shrink:0;
-}
-.ms-opt span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ms-opt.all-opt{
-  font-weight:600;color:#6b7494;font-size:11px;
-  border-bottom:1px solid #eef0f8;margin-bottom:2px;padding-bottom:8px;
-}
-.ms-clear{
-  display:block;width:100%;padding:6px 8px;
-  font-size:11px;font-weight:700;color:#dc2626;
-  background:none;border:none;border-top:1px solid #eef0f8;
-  cursor:pointer;text-align:left;margin-top:2px;
-}
-.ms-clear:hover{background:#fff5f5;border-radius:0 0 8px 8px}
-/* Table total footer */
-.tbl-total{
-  display:flex;align-items:center;justify-content:flex-end;gap:6px;
-  padding:9px 14px;background:#f8f9fc;
-  border-top:1px solid #dde1ee;font-size:12px;color:#6b7494;
-  border-radius:0 0 12px 12px;
-}
-.tbl-total strong{color:#151c32;font-family:'Montserrat',sans-serif;font-weight:800;font-size:13px}
-.tbl-sep{color:#dde1ee}
 .tw{background:#fff;border-radius:12px;border:1px solid #dde1ee;overflow:hidden}
 .ti{overflow-x:auto;max-height:440px;overflow-y:auto}
 .mt{width:100%;border-collapse:collapse;font-size:12px}
@@ -293,7 +238,7 @@ body{font-family:'Lato',sans-serif;background:#f0f2f7;color:#151c32;font-size:14
 .chips{gap:5px}
 .chip{font-size:10px;padding:3px 9px}
 .tflt{gap:5px}
-.tflt input,.ms-btn{font-size:11px;padding:5px 8px}
+.tflt input,.tflt select{font-size:11px;padding:5px 7px}
 .ti{max-height:350px}
 .mt th{font-size:9px;padding:6px 7px}
 .mt td{font-size:11px;padding:5px 7px}
@@ -604,12 +549,15 @@ function renderRanking(){
 }
 
 // ── RENDER TABLE ──────────────────────────────────────────────────────────
-function renderTbl(records,chipV,srchV,fsArr,fvArr,fsitArr){
+function renderTbl(records,chipV,srchV,fsV,fvV,fsitV){
   const s=(srchV||'').toLowerCase();
+  const fs=fsV||'';
+  const fv=fvV||'';
+  const fsit=fsitV||'';
   let f=records.filter(r=>{
-    if(fsArr&&fsArr.length&&!fsArr.includes(r.st))return false;
-    if(fvArr&&fvArr.length&&!fvArr.includes(r.via))return false;
-    if(fsitArr&&fsitArr.length){const sit=r.sit_oc||r.sit_ct||'';if(!fsitArr.includes(sit))return false;}
+    if(fs&&r.st!==fs)return false;
+    if(fv&&r.via!==fv)return false;
+    if(fsit){const sit=r.sit_oc||r.sit_ct||'';if(sit!==fsit)return false;}
     if(chipV==='Pendente'&&r.via!=='Pendente')return false;
     if(chipV==='ciclo15'&&!(r.ciclo>=15))return false;
     if(chipV==='outliers'&&!(r.ciclo>=9))return false;
@@ -617,15 +565,10 @@ function renderTbl(records,chipV,srchV,fsArr,fvArr,fsitArr){
     if(s&&!(r.sol.includes(s)||r.ins.toLowerCase().includes(s)||r.cot.includes(s)||r.ocs.includes(s)||r.ct.toLowerCase().includes(s)))return false;
     return true;
   });
+  // Ordenar por Sol. decrescente (mais novo primeiro)
   f.sort((a,b)=>Number(b.sol)-Number(a.sol));
   const cnt=document.getElementById('tcnt');
   if(cnt)cnt.textContent=f.length+' de '+records.length;
-  // Totais
-  const totalIns=f.reduce((acc,r)=>acc+(Number(r.qtd)||0),0);
-  const elPed=document.getElementById('tbl-ped-total');
-  const elIns=document.getElementById('tbl-ins-total');
-  if(elPed)elPed.textContent=f.length;
-  if(elIns)elIns.textContent=totalIns;
   const tb=document.getElementById('mtbl');
   if(!tb)return;
   tb.innerHTML=f.length===0
@@ -642,58 +585,6 @@ function renderTbl(records,chipV,srchV,fsArr,fvArr,fsitArr){
       <td style="font-weight:800;font-family:'Montserrat',sans-serif;color:${r.ciclo>=15?'#dc2626':r.ciclo>=8?'#ea6c00':r.ciclo!==null?'#16a34a':'#a8afc8'};white-space:nowrap">${r.ciclo!==null?r.ciclo+'d':'—'}</td>
     </tr>`).join('');
 }
-
-// ── MULTI-SELECT HELPERS ───────────────────────────────────────────────────
-function getSelVals(prefix){
-  var cbs=document.querySelectorAll('.'+prefix+'-opt:checked');
-  return Array.from(cbs).map(function(c){return c.value;});
-}
-function toggleMs(id){
-  var dd=document.getElementById(id);
-  if(!dd)return;
-  document.querySelectorAll('.ms-dropdown').forEach(function(d){if(d.id!==id)d.classList.remove('open');});
-  dd.classList.toggle('open');
-}
-function msToggleAll(prefix){
-  document.querySelectorAll('.'+prefix+'-opt').forEach(function(c){c.checked=false;});
-  updateMsBtn(prefix);
-  doRenderTbl();
-}
-function msCb(prefix){
-  var allCb=document.getElementById(prefix+'-all');
-  var anyChecked=Array.from(document.querySelectorAll('.'+prefix+'-opt')).some(function(c){return c.checked;});
-  if(allCb)allCb.checked=!anyChecked;
-  updateMsBtn(prefix);
-  doRenderTbl();
-}
-function msClear(prefix){
-  document.querySelectorAll('.'+prefix+'-opt').forEach(function(c){c.checked=false;});
-  var allCb=document.getElementById(prefix+'-all');
-  if(allCb)allCb.checked=true;
-  updateMsBtn(prefix);
-  doRenderTbl();
-}
-function updateMsBtn(prefix){
-  var btn=document.getElementById(prefix+'-btn');
-  if(!btn)return;
-  var vals=getSelVals(prefix);
-  var chevron='<svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" width="10" height="10"><path d="M1 1l4 4 4-4"/></svg>';
-  var labels={'atendida':'Atendida','parcial':'Parcial','pendente':'Pendente','cancelados':'Cancelado','reprovada':'Reprovada','desautorizada':'Desautorizado','OC':'Via OC','Contrato':'Via Contrato','Pendente':'Sem rota','Totalmente entregue':'Tot. entregue','Parcialmente entregue':'Parc. entregue','Parcialmente medido':'Parc. medido','Concluído':'Concluído'};
-  var defaults={'ms-st':'Status','ms-via':'Rota','ms-sit':'Situação'};
-  if(!vals.length){
-    btn.innerHTML=defaults[prefix]+' '+chevron;
-    btn.classList.remove('has-sel');
-  } else {
-    var txt=vals.slice(0,1).map(function(v){return labels[v]||v;}).join('');
-    if(vals.length>1)txt+=' <span style="font-size:10px;opacity:.7">+'+( vals.length-1)+'</span>';
-    btn.innerHTML=txt+' '+chevron;
-    btn.classList.add('has-sel');
-  }
-}
-document.addEventListener('click',function(e){
-  if(!e.target.closest('.ms-wrap'))
-    document.querySelectorAll('.ms-dropdown').forEach(function(d){d.classList.remove('open');});
-});
 
 // ── MAIN RENDER ───────────────────────────────────────────────────────────
 function renderDash(){
@@ -880,53 +771,15 @@ function renderDash(){
     </div>
     <div class="tflt">
       <input type="text" id="sr" placeholder="Nº, insumo, OC, contrato…" oninput="doRenderTbl()">
-      <div class="ms-wrap">
-        <div class="ms-btn" id="ms-st-btn" onclick="toggleMs('ms-st')">Status <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg></div>
-        <div class="ms-dropdown" id="ms-st">
-          <label class="ms-opt all-opt"><input type="checkbox" id="ms-st-all" onchange="msToggleAll('ms-st')" checked><span>Todos status</span></label>
-          <label class="ms-opt"><input type="checkbox" class="ms-st-opt" value="atendida" onchange="msCb('ms-st')"><span>Atendida</span></label>
-          <label class="ms-opt"><input type="checkbox" class="ms-st-opt" value="parcial" onchange="msCb('ms-st')"><span>Parcial</span></label>
-          <label class="ms-opt"><input type="checkbox" class="ms-st-opt" value="pendente" onchange="msCb('ms-st')"><span>Pendente</span></label>
-          <label class="ms-opt"><input type="checkbox" class="ms-st-opt" value="cancelados" onchange="msCb('ms-st')"><span>Cancelado</span></label>
-          <label class="ms-opt"><input type="checkbox" class="ms-st-opt" value="reprovada" onchange="msCb('ms-st')"><span>Reprovada</span></label>
-          <label class="ms-opt"><input type="checkbox" class="ms-st-opt" value="desautorizada" onchange="msCb('ms-st')"><span>Desautorizado</span></label>
-          <button class="ms-clear" onclick="msClear('ms-st')">✕ Limpar seleção</button>
-        </div>
-      </div>
-      <div class="ms-wrap">
-        <div class="ms-btn" id="ms-via-btn" onclick="toggleMs('ms-via')">Rota <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg></div>
-        <div class="ms-dropdown" id="ms-via">
-          <label class="ms-opt all-opt"><input type="checkbox" id="ms-via-all" onchange="msToggleAll('ms-via')" checked><span>Todas as rotas</span></label>
-          <label class="ms-opt"><input type="checkbox" class="ms-via-opt" value="OC" onchange="msCb('ms-via')"><span>Via OC</span></label>
-          <label class="ms-opt"><input type="checkbox" class="ms-via-opt" value="Contrato" onchange="msCb('ms-via')"><span>Via Contrato</span></label>
-          <label class="ms-opt"><input type="checkbox" class="ms-via-opt" value="Pendente" onchange="msCb('ms-via')"><span>Sem rota</span></label>
-          <button class="ms-clear" onclick="msClear('ms-via')">✕ Limpar seleção</button>
-        </div>
-      </div>
-      <div class="ms-wrap">
-        <div class="ms-btn" id="ms-sit-btn" onclick="toggleMs('ms-sit')">Situação <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg></div>
-        <div class="ms-dropdown" id="ms-sit">
-          <label class="ms-opt all-opt"><input type="checkbox" id="ms-sit-all" onchange="msToggleAll('ms-sit')" checked><span>Todas as situações</span></label>
-          <label class="ms-opt"><input type="checkbox" class="ms-sit-opt" value="Totalmente entregue" onchange="msCb('ms-sit')"><span>Totalmente entregue</span></label>
-          <label class="ms-opt"><input type="checkbox" class="ms-sit-opt" value="Parcialmente entregue" onchange="msCb('ms-sit')"><span>Parcialmente entregue</span></label>
-          <label class="ms-opt"><input type="checkbox" class="ms-sit-opt" value="Pendente" onchange="msCb('ms-sit')"><span>Pendente</span></label>
-          <label class="ms-opt"><input type="checkbox" class="ms-sit-opt" value="Parcialmente medido" onchange="msCb('ms-sit')"><span>Parcialmente medido</span></label>
-          <label class="ms-opt"><input type="checkbox" class="ms-sit-opt" value="Concluído" onchange="msCb('ms-sit')"><span>Concluído</span></label>
-          <button class="ms-clear" onclick="msClear('ms-sit')">✕ Limpar seleção</button>
-        </div>
-      </div>
+      <select id="fs" onchange="doRenderTbl()"><option value="">Todos status</option><option value="atendida">Atendida</option><option value="parcial">Parcial</option><option value="pendente">Pendente</option><option value="cancelados">Cancelado</option><option value="reprovada">Reprovada</option><option value="desautorizada">Desaut.</option></select>
+      <select id="fv" onchange="doRenderTbl()"><option value="">Todas rotas</option><option value="OC">Via OC</option><option value="Contrato">Via Contrato</option><option value="Pendente">Sem rota</option></select>
+      <select id="fsit" onchange="doRenderTbl()"><option value="">Todas situações</option><option value="Totalmente entregue">Entregue</option><option value="Parcialmente entregue">Parc. entregue</option><option value="Pendente">Pendente</option><option value="Parcialmente medido">Parc. medido</option><option value="Pendente medido">Pend. medido</option><option value="Concluído">Concluído</option></select>
       <span class="tcnt" id="tcnt"></span>
     </div>
     <div class="tw"><div class="ti"><table class="mt">
       <thead><tr><th>Sol.</th><th>Data</th><th>Status</th><th>Insumo</th><th>Ins.</th><th>Cotação</th><th>OC/Contrato</th><th>Situação</th><th>Ciclo</th></tr></thead>
       <tbody id="mtbl"></tbody>
-    </table></div>
-    <div class="tbl-total" id="tbl-total">
-      <span>Pedidos:</span><strong id="tbl-ped-total">0</strong>
-      <span class="tbl-sep">·</span>
-      <span>Total de insumos:</span><strong id="tbl-ins-total">0</strong>
-    </div>
-    </div>
+    </table></div></div>
   </div>`;
 
   // Active chip from state
@@ -969,7 +822,7 @@ function activateChip(val){
 
 function doRenderTbl(){
   const {records}=getDados();
-  renderTbl(records,chipAtivo,document.getElementById('sr')?document.getElementById('sr').value:'',getSelVals('ms-st'),getSelVals('ms-via'),getSelVals('ms-sit'));
+  renderTbl(records,chipAtivo,document.getElementById('sr')?.value,document.getElementById('fs')?.value,document.getElementById('fv')?.value,document.getElementById('fsit')?.value);
 }
 
 // ── PARSER ────────────────────────────────────────────────────────────────
